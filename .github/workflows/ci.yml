@@ -34,16 +34,12 @@ jobs:
           name: kubeeye
           path: kubeeye
 
-      - name: Push Docker image
-        env:
-          # 指定自己的仓库地址
-          docker_repo: panzhen666888
-          # 指定镜像名称
-          image_name: kubeeye
-          # 指定镜像标签
-          tag: 0.0.2
-        run: |
-          docker version
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }} https://hub.docker.com/
-          docker build . --file Dockerfile --tag $docker_repo/$image_name:$tag
-          docker push $docker_repo/$image_name:$tag
+      - name: Build & push Docker image
+        uses: mr-smithers-excellent/docker-build-push@v5
+        with:
+          image: panzhen666888/kubeeye
+          tags: v1, latest
+          registry: docker.io
+          dockerfile: Dockerfile.ci
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
