@@ -44,5 +44,6 @@ jobs:
           tag: 0.0.2
         run: |
           docker version
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }} https://hub.docker.com/
           docker build . --file Dockerfile --tag $docker_repo/$image_name:$tag
           docker push $docker_repo/$image_name:$tag
