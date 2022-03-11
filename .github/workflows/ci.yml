@@ -33,3 +33,16 @@ jobs:
         with:
           name: kubeeye
           path: kubeeye
+
+      - name: Push Docker image
+          env:
+            # 指定自己的仓库地址
+            docker_repo: panzhen666888
+            # 指定镜像名称
+            image_name: kubeeye
+            # 指定镜像标签
+            tag: 0.0.2
+          run:
+            docker version
+            docker build . --file Dockerfile --tag $docker_repo/$image_name:$tag
+            docker push $docker_repo/$image_name:$tag
