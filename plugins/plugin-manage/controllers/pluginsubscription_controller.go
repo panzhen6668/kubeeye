@@ -71,7 +71,6 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if !pluginSub.ObjectMeta.DeletionTimestamp.IsZero() {
 		// The object is being deleted, uninstall plugin
 		logs.Info("Get pluginSub", "name", pluginSub.GetName())
-		//fmt.Printf("3333GetName:%s !!!!!!!!!!!!!!!!! \n", pluginSub.GetName())
 		if err := expend.UninstallPlugin(ctx, "", pluginSub.GetName()); err != nil {
 			logs.Error(err, "Uninstall plugin failed ", "error:", err)
 			return ctrl.Result{}, err
@@ -102,15 +101,17 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		logs.Info("PluginManage installed complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
 		// update install status
 		if expend.IsPluginPodRunning() {
+			logs.Info("will update CR Status !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
 			pluginSub.Status.Install = true
 			pluginSub.Status.Enabled = pluginSub.Spec.Enabled
 			if err := r.Status().Update(ctx, pluginSub); err != nil {
 				logs.Error(err, "Update CR Status failed")
 				return ctrl.Result{}, err
 			}
+			logs.Info("Update CR Status complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
 		}
 	}
-
+	logs.Info("return complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
 	return ctrl.Result{}, nil
 }
 

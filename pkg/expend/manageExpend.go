@@ -2,7 +2,6 @@ package expend
 
 import (
 	"context"
-	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/pkg/errors"
 )
@@ -21,28 +20,18 @@ type Installer struct {
 type Resources []byte
 
 func (installer Installer) install(resource Resources) error {
-	//ctx := installer.CTX
-	/*kubeconfig := installer.Kubeconfig
-
-	clients, err := GetK8SClients(kubeconfig)
-	if err != nil {
+	ctx := installer.CTX
+	// create  resources
+	err := ResourceCreater(installer.Clients, ctx, resource)
+	if err == nil {
 		return err
-	}*/
-
-	// create npd resources
-	//err = ResourceCreater(clients, ctx, resource)
-	if installer.Clients == nil {
-		fmt.Printf("installer Clients nil \n")
-		return errors.New("installer Clients nil")
 	}
-
-	InstallV2("kubeeye-system", installer.Clients.ClientSet, installer.Clients.DynamicClient, resource)
 	return nil
 }
 
 func (installer Installer) uninstall(resource Resources) error {
 	ctx := installer.CTX
-	// delete npd resources
+	// delete  resources
 	err := ResourceRemover(installer.Clients, ctx, resource)
 	if err != nil {
 		return err

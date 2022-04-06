@@ -7,4 +7,5 @@ var (
 	PluginName       = "kube-bench"
 	PluginGroup      = "kubeeye.kubesphere.io"
 	PluginResource   = "plugins"
+	MaxCheckPodCount = 15
 )

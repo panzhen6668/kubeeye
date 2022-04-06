@@ -42,10 +42,6 @@ func ResourceCreater(clients *kube.KubernetesClient, ctx context.Context, resour
 func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured,) error {
 	// get namespace from resource.Object
 	namespace := unstructuredResource.GetNamespace()
-	fmt.Printf("!!! namespace:%s \n", namespace)
-	if namespace == ""{
-		namespace = "kubeeye-system"
-	}
 	result, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, unstructuredResource, metav1.CreateOptions{})
 	if err != nil {
 		if kubeErr.IsAlreadyExists(err) {
@@ -54,8 +50,8 @@ func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mappin
 			return errors.Wrap(err, "Create resource failed, resource is invalid")
 		}
 	}
-	fmt.Printf("!!!!!!!!!!!! result:%v", result)
-	//fmt.Printf("%s\t%s\t created\n", result.GetKind(), result.GetName())
+
+	fmt.Printf("%s\t%s\t created\n", result.GetKind(), result.GetName())
 	return nil
 }
 
@@ -145,7 +141,7 @@ func InstallV2(nameSpace string,clientSet kubernetes.Interface,dd dynamic.Interf
 	}
 
 	unstructuredObj := &unstructured.Unstructured{Object: unstructuredMap}
-	fmt.Printf("!!!!!!!!!!!!!!!!!!!!!!!!! unstructuredMap:%+v\n",unstructuredObj)
+	//fmt.Printf("!!!!!!!!!!!!!!!!!!!!!!!!! unstructuredMap:%+v\n",unstructuredObj)
 
 	gr, err := restmapper.GetAPIGroupResources(clientSet.Discovery())
 	if err != nil {
