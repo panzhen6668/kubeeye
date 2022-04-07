@@ -1,24 +1,21 @@
 package expend
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/kubesphere/kubeeye/pkg/kube"
-	"log"
-
-	//"github.com/lithammer/dedent"
+	"github.com/lithammer/dedent"
 	"github.com/pkg/errors"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
+	"strings"
 )
 
 func ResourceCreater(clients *kube.KubernetesClient, ctx context.Context, resource []byte) (err error) {
@@ -39,7 +36,7 @@ func ResourceCreater(clients *kube.KubernetesClient, ctx context.Context, resour
 	return nil
 }
 
-func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured,) error {
+func CreateResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured, ) error {
 	// get namespace from resource.Object
 	namespace := unstructuredResource.GetNamespace()
 	result, err := dynamicClient.Resource(mapping.Resource).Namespace(namespace).Create(ctx, unstructuredResource, metav1.CreateOptions{})
@@ -71,7 +68,7 @@ func ResourceRemover(clients *kube.KubernetesClient, ctx context.Context, resour
 	return nil
 }
 
-func RemoveResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping,unstructuredResource *unstructured.Unstructured) error {
+func RemoveResource(ctx context.Context, dynamicClient dynamic.Interface, mapping *meta.RESTMapping, unstructuredResource *unstructured.Unstructured) error {
 	name := unstructuredResource.GetName()
 	namespace := unstructuredResource.GetNamespace()
 
@@ -90,11 +87,10 @@ func RemoveResource(ctx context.Context, dynamicClient dynamic.Interface, mappin
 // ParseResources by parsing the resource, put the result into unstructuredResource and return it.
 func ParseResources(clientset kubernetes.Interface, resource []byte) (*meta.RESTMapping, *unstructured.Unstructured, error) {
 	var unstructuredResource unstructured.Unstructured
-	fmt.Printf("!!!!!!!!!!!!!!!!!!!!!!!!! resource:%+v\n",string(resource))
-	//r := dedent.Dedent(string(resource))
+	r := dedent.Dedent(string(resource))
 	// decode resource for convert the resource to unstructur.
-	//newreader := strings.NewReader(bytes.NewReader(r))
-	decode := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(resource), 4096)
+	newreader := strings.NewReader(r)
+	decode := yaml.NewYAMLOrJSONDecoder(newreader, 4096)
 	// get resource kind and group
 	disc := clientset.Discovery()
 	restMapperRes, _ := restmapper.GetAPIGroupResources(disc)
@@ -104,8 +100,7 @@ func ParseResources(clientset kubernetes.Interface, resource []byte) (*meta.REST
 		return nil, &unstructuredResource, errors.Wrap(err, "decode error")
 	}
 	// get resource.Object
-	//obj, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
-	obj, gvk, err :=  yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode(ext.Raw, nil, nil)
+	obj, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 	if err != nil {
 		return nil, &unstructuredResource, errors.Wrap(err, "failed to get resource object")
 	}
@@ -118,69 +113,9 @@ func ParseResources(clientset kubernetes.Interface, resource []byte) (*meta.REST
 	// convert the resource.Object into unstructured
 
 	unstructuredResource.Object, err = runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
-	fmt.Printf("!!!!!!!!!!!!!!!!!!!!!!!!! unstructuredResource:%+v\n",unstructuredResource)
+
 	if err != nil {
 		return nil, &unstructuredResource, errors.Wrap(err, "failed to converts an object into unstructured representation")
 	}
 	return mapping, &unstructuredResource, nil
-}
-
-func InstallV2(nameSpace string,clientSet kubernetes.Interface,dd dynamic.Interface,filebytes []byte){
-	decoder := yamlutil.NewYAMLOrJSONDecoder(bytes.NewReader(filebytes), 4096)
-	//for {
-	var rawObj runtime.RawExtension
-	if err := decoder.Decode(&rawObj); err != nil {
-		fmt.Printf("Decode err:%v \n",err)
-		//break
-	}
-
-	obj, gvk, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode(rawObj.Raw, nil, nil)
-	unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	unstructuredObj := &unstructured.Unstructured{Object: unstructuredMap}
-	//fmt.Printf("!!!!!!!!!!!!!!!!!!!!!!!!! unstructuredMap:%+v\n",unstructuredObj)
-
-	gr, err := restmapper.GetAPIGroupResources(clientSet.Discovery())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	mapper := restmapper.NewDiscoveryRESTMapper(gr)
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var dri dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		if unstructuredObj.GetNamespace() == "" {
-			fmt.Printf("SetNamespace  \n")
-			unstructuredObj.SetNamespace(nameSpace)
-		}
-		fmt.Printf("Resource !!!!!!!!!!!!!!!11111111111111111  \n")
-		dri = dd.Resource(mapping.Resource).Namespace(unstructuredObj.GetNamespace())
-	} else {
-		fmt.Printf("Resource !!!!!!!!!!!!!!!2222222222222222  \n")
-		dri = dd.Resource(mapping.Resource)
-	}
-	//dri = dd.Resource(mapping.Resource).Namespace(unstructuredObj.GetNamespace())
-	fmt.Printf("Resource !!!!!!!!!!!!!!!3333333333333333333  \n")
-	obj2, err := dri.Create(context.Background(), unstructuredObj, metav1.CreateOptions{})
-	if err != nil {
-		fmt.Printf("!!!!!!!!!!!!!!!! dri.Create err:%v\n", err)
-		if kubeErr.IsAlreadyExists(err) {
-			fmt.Printf("IsAlreadyExists  \n")
-			return
-		} else if kubeErr.IsInvalid(err) {
-			fmt.Printf("IsInvalid  \n")
-			return
-		}
-	}else{
-		fmt.Printf("%s/%s created\n", obj2.GetKind(), obj2.GetName())
-	}
-	return
-	//}
 }

@@ -18,9 +18,6 @@ package controllers
 
 import (
 	"context"
-	"time"
-
-	//"fmt"
 	"github.com/kubesphere/kubeeye/pkg/expend"
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/plugins/plugin-manage/api/v1alpha1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
@@ -53,29 +50,24 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 	logs := log.FromContext(ctx)
 
 	// TODO(user): your logic here
-	logs.Info("PluginManageReconciler Reconcile !!!!!!!!!!!")
 	pluginSub := &kubeeyev1alpha1.PluginSubscription{}
-
 	err := r.Get(ctx, req.NamespacedName, pluginSub)
 	if err != nil {
 		if kubeErr.IsNotFound(err) {
 			logs.Info("Cluster resource not found. Ignoring since object must be deleted ", "name", req.String())
 			return ctrl.Result{}, nil
 		}
-
-		logs.Error(err, "Get pluginSub failed of ", req.String())
-		return ctrl.Result{RequeueAfter: time.Second * 3}, err
+		logs.Error(err, "Get pluginSub object failed for ", req.String())
+		return ctrl.Result{}, err
 	}
 
 	finalizer := "kubeeye.kubesphere.io/plugin"
 	if !pluginSub.ObjectMeta.DeletionTimestamp.IsZero() {
 		// The object is being deleted, uninstall plugin
-		logs.Info("Get pluginSub", "name", pluginSub.GetName())
-		if err := expend.UninstallPlugin(ctx, "", pluginSub.GetName()); err != nil {
-			logs.Error(err, "Uninstall plugin failed ", "error:", err)
+		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), false); err != nil {
 			return ctrl.Result{}, err
 		}
-		logs.Info("PluginManage uninstalled complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
+
 		pluginSub.ObjectMeta.Finalizers = removeString(pluginSub.ObjectMeta.Finalizers, finalizer)
 		if err := r.Update(ctx, pluginSub); err != nil {
 			return ctrl.Result{}, err
@@ -88,30 +80,27 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if !containsString(pluginSub.ObjectMeta.Finalizers, finalizer) {
 		pluginSub.ObjectMeta.Finalizers = append(pluginSub.ObjectMeta.Finalizers, finalizer)
 		if err := r.Update(ctx, pluginSub); err != nil {
-			logs.Error(err, "Update CR Status failed")
-			return ctrl.Result{}, nil
+			return ctrl.Result{}, err
 		}
 	}
 	// if plugin is not installed, install it
 	if !pluginSub.Status.Install {
-		if err := expend.InstallPlugin(ctx, "", pluginSub.GetName()); err != nil {
-			logs.Error(err, "Install KubeBench failed with error: %v")
+
+		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), true); err != nil {
+			logs.Error(err, "Install Plugin failed")
 			return ctrl.Result{}, err
 		}
-		logs.Info("PluginManage installed complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
-		// update install status
-		if expend.IsPluginPodRunning() {
-			logs.Info("will update CR Status !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
+
+		// update plugin installed status
+		if expend.IsPluginPodRunning(pluginSub.GetNamespace(), pluginSub.GetName()) {
 			pluginSub.Status.Install = true
 			pluginSub.Status.Enabled = pluginSub.Spec.Enabled
 			if err := r.Status().Update(ctx, pluginSub); err != nil {
-				logs.Error(err, "Update CR Status failed")
 				return ctrl.Result{}, err
 			}
-			logs.Info("Update CR Status complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
 		}
 	}
-	logs.Info("return complete !!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!")
+
 	return ctrl.Result{}, nil
 }
 

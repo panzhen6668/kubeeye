@@ -12,9 +12,10 @@ type Expends interface {
 }
 
 type Installer struct {
-	CTX        context.Context
+	CTX context.Context
+	// Kubeconfig can be deleted later
 	Kubeconfig string
-	Clients *kube.KubernetesClient
+	Clients    *kube.KubernetesClient
 }
 
 type Resources []byte
