@@ -36,8 +36,8 @@ type PluginSubscriptionSpec struct {
 type PluginSubscriptionStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Install bool `json:"install,omitempty"`
-	Enabled bool `json:"enabled,omitempty"`
+	Install string `json:"install,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
 }
 
 //+kubebuilder:object:root=true

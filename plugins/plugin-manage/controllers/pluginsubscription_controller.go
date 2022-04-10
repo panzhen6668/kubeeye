@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/kubesphere/kubeeye/pkg/expend"
 	kubeeyev1alpha1 "github.com/kubesphere/kubeeye/plugins/plugin-manage/api/v1alpha1"
+	"github.com/kubesphere/kubeeye/plugins/plugin-manage/pkg"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -64,10 +65,19 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 	finalizer := "kubeeye.kubesphere.io/plugin"
 	if !pluginSub.ObjectMeta.DeletionTimestamp.IsZero() {
 		// The object is being deleted, uninstall plugin
-		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), false); err != nil {
+		pluginSub.Status.Install = pkg.PluginUninstalling
+		if err := r.Status().Update(ctx, pluginSub); err != nil {
 			return ctrl.Result{}, err
 		}
 
+		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), false); err != nil {
+			return ctrl.Result{}, err
+		}
+		pluginSub.Status.Install = pkg.PluginUninstalled
+		if err := r.Status().Update(ctx, pluginSub); err != nil {
+			return ctrl.Result{}, err
+		}
+		logs.Info("plugin uninstalled complete")
 		pluginSub.ObjectMeta.Finalizers = removeString(pluginSub.ObjectMeta.Finalizers, finalizer)
 		if err := r.Update(ctx, pluginSub); err != nil {
 			return ctrl.Result{}, err
@@ -84,20 +94,26 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 		}
 	}
 	// if plugin is not installed, install it
-	if !pluginSub.Status.Install {
+	if pluginSub.Status.Install == pkg.PluginUninstalled || pluginSub.Status.Install == "" {
+		// update status to installing
+		pluginSub.Status.Install = pkg.PluginInstalling
+		if err := r.Status().Update(ctx, pluginSub); err != nil {
+			return ctrl.Result{}, err
+		}
 
 		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), true); err != nil {
-			logs.Error(err, "Install Plugin failed")
+			logs.Error(err, "plugin installed failed")
 			return ctrl.Result{}, err
 		}
 
 		// update plugin installed status
 		if expend.IsPluginPodRunning(pluginSub.GetNamespace(), pluginSub.GetName()) {
-			pluginSub.Status.Install = true
+			pluginSub.Status.Install = pkg.PluginIntalled
 			pluginSub.Status.Enabled = pluginSub.Spec.Enabled
 			if err := r.Status().Update(ctx, pluginSub); err != nil {
 				return ctrl.Result{}, err
 			}
+			logs.Info("plugin installed successfully.")
 		}
 	}
 
