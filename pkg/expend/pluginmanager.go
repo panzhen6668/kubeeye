@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"github.com/kubesphere/kubeeye/plugins/plugin-manage/pkg"
 	corev1 "k8s.io/api/core/v1"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"strings"
 	"time"
@@ -19,12 +17,7 @@ import (
 var ClientSet *kubernetes.Clientset
 
 // InstallOrUninstallPlugin, if isInstall is true, it will installed,otherwize uninstall
-func InstallOrUninstallPlugin(ctx context.Context, namespace, apiVersion, pluginName string, isInstall bool) error {
-	av := strings.Split(apiVersion, "/")
-	if len(av) != 2 {
-		return errors.New(fmt.Sprintf("parse apiVersion[%s] failed ", apiVersion))
-	}
-
+func InstallOrUninstallPlugin(ctx context.Context, namespace, pluginName string, isInstall bool) error {
 	var installer Expends
 	clients, err := GetK8SClients("")
 	if err != nil {
@@ -36,17 +29,7 @@ func InstallOrUninstallPlugin(ctx context.Context, namespace, apiVersion, plugin
 	}
 	ClientSet = clients.ClientSet.(*kubernetes.Clientset)
 
-	gvrInfo := pkg.GVRInfo{
-		GVR: schema.GroupVersionResource{
-			Group:    av[0],
-			Version:  av[1],
-			Resource: pkg.PluginResource,
-		},
-		Namespace: namespace,
-		Name:      pluginName,
-	}
-
-	resources, err := pkg.GetPluginManifest(clients.DynamicClient, gvrInfo)
+	resources, err := pkg.GetPluginManifest(ClientSet, namespace, pluginName)
 	if err != nil {
 		return err
 	}
@@ -67,48 +50,6 @@ func InstallOrUninstallPlugin(ctx context.Context, namespace, apiVersion, plugin
 
 	return nil
 }
-
-/*func UninstallPlugin(ctx context.Context, namespace, apiVersion, pluginName string) error {
-	av := strings.Split(apiVersion, "/")
-	if len(av) != 2 {
-		return errors.New(fmt.Sprintf("parse apiVersion[%s] failed ", apiVersion))
-	}
-
-	var installer Expends
-	clients, err := GetK8SClients("")
-	if err != nil {
-		return err
-	}
-	installer = Installer{
-		CTX:     ctx,
-		Clients: clients,
-	}
-
-	gvrInfo := pkg.GVRInfo{
-		GVR: schema.GroupVersionResource{
-			Group:    av[0],
-			Version:  av[1],
-			Resource: pkg.PluginResource,
-		},
-		Namespace: namespace,
-		Name:      pluginName,
-	}
-
-	resources, err := pkg.GetPluginManifest(clients.DynamicClient, gvrInfo)
-	if err != nil {
-		return err
-	}
-
-	pluginCRDResources := []byte(resources)
-	pluginCRDResourceList := bytes.Split(pluginCRDResources, []byte("---"))
-	for _, resource := range pluginCRDResourceList {
-		if err := installer.uninstall(resource); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}*/
 
 // IsPluginPodRunning check pod is running or not
 // Preconditions: the define plugin name is the prefix of the container name

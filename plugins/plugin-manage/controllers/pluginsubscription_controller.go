@@ -70,7 +70,7 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{}, err
 		}
 
-		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), false); err != nil {
+		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.GetName(), false); err != nil {
 			return ctrl.Result{}, err
 		}
 		pluginSub.Status.Install = pkg.PluginUninstalled
@@ -101,7 +101,7 @@ func (r *PluginSubscriptionReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{}, err
 		}
 
-		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.TypeMeta.APIVersion, pluginSub.GetName(), true); err != nil {
+		if err := expend.InstallOrUninstallPlugin(ctx, pluginSub.GetNamespace(), pluginSub.GetName(), true); err != nil {
 			logs.Error(err, "plugin installed failed")
 			return ctrl.Result{}, err
 		}
