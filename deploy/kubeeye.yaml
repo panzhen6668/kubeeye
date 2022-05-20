@@ -169,6 +169,8 @@ spec:
                   this file'
                   format: date-time
                   type: string
+                auditPercent:
+                  type: integer
                 auditResults:
                   items:
                     properties:
@@ -221,8 +223,6 @@ spec:
                     workloadsCount:
                       type: integer
                   type: object
-                isAuditOver:
-                  type: boolean
                 pluginsResults:
                   items:
                     properties:
@@ -982,7 +982,7 @@ data:
             control-plane: kubebench
         spec:
           containers:
-            - image: panzhen666888/kube-bench:latest
+            - image: panzhen666888/kubebench:latest
               name: kubebench
               imagePullPolicy: IfNotPresent
               livenessProbe:
@@ -1081,7 +1081,7 @@ spec:
             - --leader-elect
           command:
             - /ke-manager
-          image: panzhen666888/kubeeye-manager     #kubesphere/kubeeye:latest
+          image: panzhen666888/kubeeye-manager:0.0.2     #kubesphere/kubeeye:latest
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -1098,8 +1098,8 @@ spec:
             periodSeconds: 10
           resources:
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: 500m
+              memory: 512Mi
             requests:
               cpu: 10m
               memory: 64Mi

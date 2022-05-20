@@ -45,6 +45,8 @@ type ClusterInsightReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+var AuditComplete = 100
+
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubeeye.kubesphere.io,resources=clusterinsights/finalizers,verbs=update
@@ -94,12 +96,13 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	logs.Info(fmt.Sprintf("clusterInsight status IsAuditOver[%v]", clusterInsight.Status.IsAuditOver))
-	if !clusterInsight.Status.IsAuditOver {
+	logs.Info(fmt.Sprintf("clusterInsight status AuditPercent[%d]", clusterInsight.Status.AuditPercent))
+	if clusterInsight.Status.AuditPercent == 0 {
 		logs.Info("Starting cluster audit")
 		pluginsList, err := expend.ListCRDResources(ctx, clients.DynamicClient, clusterInsight.GetNamespace())
 		if err != nil {
 			logs.Error(err, "ListCRDResources failed")
+			pluginsList = nil
 		}
 		clusterInsight.Status.PluginsResults = []kubeeyev1alpha1.PluginsResult{}
 		if len(pluginsList) != 0 {
@@ -129,6 +132,36 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		K8SResources, validationResultsChan := audit.ValidationResults(ctx, clients, "")
 
+		t := time.NewTimer(time.Second * 5)
+		ch := make(chan bool)
+		defer close(ch)
+		go func(t *time.Timer) {
+			defer t.Stop()
+			for {
+				select {
+				case <-t.C:
+					fmt.Printf("audit percent:%d\n", audit.AuditPercent)
+					if audit.AuditPercent == AuditComplete {
+						time.Sleep(500 * time.Millisecond)
+					}
+					clusterInsight.Status.AuditPercent = audit.AuditPercent
+					if err := r.Status().Update(ctx, clusterInsight); err != nil {
+						if kubeErr.IsConflict(err) {
+							return
+						} else {
+							logs.Error(err, "update CR failed")
+							return
+						}
+					}
+					// 需要重置Reset 使 t 重新开始计时
+					t.Reset(time.Second * 5)
+				case <-ch:
+					fmt.Println("timer Stop")
+					return
+				}
+			}
+		}(t)
+
 		// get cluster info
 		clusterInfo := setClusterInfo(K8SResources)
 
@@ -151,7 +184,9 @@ func (r *ClusterInsightReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		clusterInsight.Status.ScoreInfo = scoreInfo
 
 		//set Audit task status
-		clusterInsight.Status.IsAuditOver = true
+		clusterInsight.Status.AuditPercent = AuditComplete
+		fmt.Println("notify thread will exit...")
+		ch <- true
 		// update clusterInsight CR
 
 		if err := r.Status().Update(ctx, clusterInsight); err != nil {

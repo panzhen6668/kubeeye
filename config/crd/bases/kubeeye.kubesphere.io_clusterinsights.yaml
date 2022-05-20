@@ -49,6 +49,8 @@ spec:
                   this file'
                 format: date-time
                 type: string
+              auditPercent:
+                type: integer
               auditResults:
                 items:
                   properties:
@@ -101,8 +103,6 @@ spec:
                   workloadsCount:
                     type: integer
                 type: object
-              isAuditOver:
-                type: boolean
               pluginsResults:
                 items:
                   properties:

@@ -30,77 +30,153 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+var lock sync.Mutex
+
 type validateFunc func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults
 
 func RegoRulesValidate(queryRule string, Resources kube.K8SResource) validateFunc {
+	fmt.Printf("!!!!!!!!!!!!! 000queryRule:%+v\n", queryRule)
+	// count
+
+	//total := len(Resources.Deployments.Items) + len(Resources.StatefulSets.Items) + len(Resources.DaemonSets.Items) + len(Resources.Jobs.Items) + len(Resources.CronJobs.Items) + +len(Resources.Roles.Items) + len(Resources.ClusterRoles.Items) + len(Resources.Nodes.Items) + len(Resources.Events.Items) + 1
+	fmt.Printf("!!!!!!!!!!!!!  K8SResource total:%+v\n", TotalAuditCount)
 
 	return func(ctx context.Context, regoRulesList []string) []kubeeyev1alpha1.AuditResults {
 		var auditResults []kubeeyev1alpha1.AuditResults
-
 		if queryRule == workloads && Resources.Deployments != nil {
+			fmt.Printf("!!!!!!!!!!!!!  Deployments\n")
 			for _, resource := range Resources.Deployments.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.StatefulSets != nil {
+			fmt.Printf("!!!!!!!!!!!!!  StatefulSets\n")
 			for _, resource := range Resources.StatefulSets.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.DaemonSets != nil {
+			fmt.Printf("!!!!!!!!!!!!!  DaemonSets\n")
 			for _, resource := range Resources.DaemonSets.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.Jobs != nil {
+			fmt.Printf("!!!!!!!!!!!!!  Jobs\n")
 			for _, resource := range Resources.Jobs.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				lock.Unlock()
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == workloads && Resources.CronJobs != nil {
+			fmt.Printf("!!!!!!!!!!!!!  CronJobs\n")
 			for _, resource := range Resources.CronJobs.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == rbac && Resources.Roles != nil {
+			fmt.Printf("!!!!!!!!!!!!!  Roles\n")
 			for _, resource := range Resources.Roles.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == rbac && Resources.ClusterRoles != nil {
+			fmt.Printf("!!!!!!!!!!!!!  ClusterRoles\n")
 			for _, resource := range Resources.ClusterRoles.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == nodes && Resources.Nodes != nil {
+			fmt.Printf("!!!!!!!!!!!!!  Nodes\n")
 			for _, resource := range Resources.Nodes.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == events && Resources.Events != nil {
+			fmt.Printf("!!!!!!!!!!!!!  Events\n")
 			for _, resource := range Resources.Events.Items {
+				lock.Lock()
+				CurrentAuditCount--
+				AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+				//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+				//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+				lock.Unlock()
 				if auditResult, found := validateK8SResource(ctx, resource, regoRulesList, queryRule); found {
 					auditResults = append(auditResults, auditResult)
 				}
 			}
 		}
 		if queryRule == certexp && Resources.APIServerAddress != "" {
+			fmt.Printf("!!!!!!!!!!!!!  APIServerAddress\n")
+			lock.Lock()
+			CurrentAuditCount--
+			AuditPercent  = (TotalAuditCount - CurrentAuditCount) * 100 / TotalAuditCount
+			//fmt.Printf("!!!!!!!!!!!!!  left auditnum:%+v\n", current)
+			//fmt.Printf("!!!!!!!!!!!!!  audit percent:%+v\n", percent)
+			lock.Unlock()
 			resource := Resources.APIServerAddress
 			if auditResult, found := validateCertExp(resource); found {
 				auditResults = append(auditResults, auditResult)
@@ -114,7 +190,7 @@ func RegoRulesValidate(queryRule string, Resources kube.K8SResource) validateFun
 
 // MergeRegoRulesValidate Validate kubernetes cluster Resources, put the results into channels.
 func MergeRegoRulesValidate(ctx context.Context, regoRulesChan <-chan string, vfuncs ...validateFunc) <-chan []kubeeyev1alpha1.AuditResults {
-
+	fmt.Printf("!!!!!!!!!!!!! regoRulesChan:%+v\n", regoRulesChan)
 	resultChan := make(chan []kubeeyev1alpha1.AuditResults)
 	var wg sync.WaitGroup
 	wg.Add(len(vfuncs))
@@ -146,6 +222,9 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 	var resultReceiver kubeeyev1alpha1.ResultInfos
 	var resourceInfos kubeeyev1alpha1.ResourceInfos
 	var resultItems kubeeyev1alpha1.ResultItems
+	//fmt.Printf("!!!!!!!!!!!!! regoRulesList:%+v\n", regoRulesList)
+	//fmt.Printf("!!!!!!!!!!!!!222222222 queryRule:%+v\n", queryRule)
+	//start := time.Now()
 	find := false
 	for _, regoRule := range regoRulesList {
 		query, err := rego.New(rego.Query(queryRule), rego.Module("examples.rego", regoRule)).PrepareForEval(ctx)
@@ -209,6 +288,8 @@ func validateK8SResource(ctx context.Context, resource unstructured.Unstructured
 	}
 	resultReceiver.ResourceInfos = resourceInfos
 	auditResult.ResultInfos = append(auditResult.ResultInfos, resultReceiver)
+	//cost := time.Since(start)
+	//fmt.Println("!!!!!!!!!!!!!!!!! cost=", cost)
 	return auditResult, find
 }
 

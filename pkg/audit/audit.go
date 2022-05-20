@@ -17,6 +17,7 @@ package audit
 import (
 	"context"
 
+	"fmt"
 	"github.com/kubesphere/kubeeye/apis/kubeeye/v1alpha1"
 	"github.com/kubesphere/kubeeye/pkg/kube"
 	"github.com/kubesphere/kubeeye/pkg/regorules"
@@ -31,6 +32,7 @@ var (
 	events    = "data.kubeeye_events_rego"
 	certexp   = "data.kubeeye_certexpiration"
 )
+var TotalAuditCount,CurrentAuditCount,AuditPercent int
 
 func Cluster(ctx context.Context, kubeConfigPath string, additionalregoruleputh string, output string) error {
 	kubeConfig, err := kube.GetKubeConfig(kubeConfigPath)
@@ -75,9 +77,11 @@ func ValidationResults(ctx context.Context, kubernetesClient *kube.KubernetesCli
 			logs.Error(err, "failed to get kubernetes resources")
 		}
 	}(ctx, kubernetesClient)
-
+	fmt.Printf("kube.K8sResourcesChan:%+v\n", kube.K8sResourcesChan)
+	fmt.Printf("additionalregoruleputh:%+v\n", additionalregoruleputh)
 	k8sResources := <-kube.K8sResourcesChan
-
+	TotalAuditCount = len(k8sResources.Deployments.Items) + len(k8sResources.StatefulSets.Items) + len(k8sResources.DaemonSets.Items) + len(k8sResources.Jobs.Items) + len(k8sResources.CronJobs.Items) + +len(k8sResources.Roles.Items) + len(k8sResources.ClusterRoles.Items) + len(k8sResources.Nodes.Items) + len(k8sResources.Events.Items) + 1
+	CurrentAuditCount = TotalAuditCount
 	logs.Info("getting and merging the Rego rules")
 	regoRulesChan := regorules.MergeRegoRules(ctx, regorules.GetDefaultRegofile("rules"), regorules.GetAdditionalRegoRulesfiles(additionalregoruleputh))
 
