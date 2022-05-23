@@ -1,0 +1,13 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: Plugin
+metadata:
+  name: kubebench
+  namespace: kubeeye-system
+spec:
+---
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: Plugin
+metadata:
+  name: kubehunter
+  namespace: kubeeye-system
+spec:

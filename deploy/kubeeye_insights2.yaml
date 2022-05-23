@@ -1,0 +1,7 @@
+apiVersion: kubeeye.kubesphere.io/v1alpha1
+kind: ClusterInsight
+metadata:
+  namespace: kubeeye-system
+  name: clusterinsight-sample2
+spec:
+  auditPeriod: 2h
